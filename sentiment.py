@@ -1,7 +1,8 @@
 import stanza
+import os
 import twitterapi
 
-nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment', dir="/home/Nim/sdcard/stanza_resources")
+nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment', dir=os.getenv("TS_DATA"))
 
 while True:
     hashtags = input("Hashtags: ")
