@@ -21,9 +21,8 @@ while True:
 
     print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
 
-    for tweet in tweets:
-        if tweet["lang"] != "fr":
-            tweets.remove(tweet)
+    tweets = list(filter(lambda e: e["lang"] == "fr", tweets))
+    print("Kept %d french tweets"%len(tweets))
     total = 0
     for tweet in tweets:
         doc = nlp(tweet["text"])
