@@ -12,11 +12,6 @@ search_url = "https://api.twitter.com/2/tweets/search/recent?"
 
 # Optional params: start_time,end_time,since_id,until_id,max_results,next_token,
 # expansions,tweet.fields,media.fields,poll.fields,place.fields,user.fields
-query_params = {
-    'query': '(#Macron -is:retweet)',
-    'tweet.fields': 'author_id',
-    'max_results': 100,
-}
 
 
 def bearer_oauth(r):
@@ -36,8 +31,14 @@ def connect_to_endpoint(url, params):
     return response.json()
 
 
-def searchTweets(hashtags):
-    query_params["query"] = '(%s -is:retweet)'%hashtags
+def searchTweets(hashtags, untilId):
+    query_params = {
+        'query' : '(%s -is:retweet)'%hashtags,
+        'tweet.fields': 'author_id',
+        'max_results': 100,
+    }
+    if untilId != "":
+        query_params["until_id"] = untilId
     return connect_to_endpoint(search_url, query_params)
 
 
