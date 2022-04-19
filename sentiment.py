@@ -3,7 +3,9 @@ import os
 import twitterapi
 import pickle
 
-nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment', dir=os.getenv("TS_DATA"))
+print(os.getenv("DATA_DIR"))
+
+nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment', dir=os.getenv("DATA_DIR"))
 
 while True:
     
