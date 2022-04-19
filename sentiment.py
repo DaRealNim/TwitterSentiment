@@ -1,6 +1,7 @@
 import stanza
 import os
 import twitterapi
+import pickle
 
 print(os.getenv("DATA_DIR"))
 
@@ -21,6 +22,10 @@ while True:
         untilId = tweets[-1]["id"]
 
     print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+
+    for tweet in tweets:
+        if tweet["lang"] != "fr":
+            tweets.remove(tweet)
     total = 0
     for tweet in tweets:
         doc = nlp(tweet["text"])

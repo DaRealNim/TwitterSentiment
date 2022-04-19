@@ -34,7 +34,7 @@ def connect_to_endpoint(url, params):
 def searchTweets(hashtags, untilId):
     query_params = {
         'query' : '(%s -is:retweet)'%hashtags,
-        'tweet.fields': 'author_id',
+        'tweet.fields': 'author_id,lang',
         'max_results': 100,
     }
     if untilId != "":
