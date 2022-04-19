@@ -1,3 +1,8 @@
+import pickle
+import stanza
+import os
+import pickle
+
 def getNegAndPosWords():
     with open("dicts/frlsd.cat") as dictFile:
         lines = iter(dictFile.readlines())
@@ -23,4 +28,32 @@ def getNegAndPosWords():
                 print(pos)
             except StopIteration:
                 break
+    dictFile.close()
+
     return (positiveWords, negativeWords)
+
+
+def openTweets():
+    with open("exemple_datasets/bonheur.lst") as bonheurFile:
+       bonheurTweets = pickle.load(bonheurFile)
+       bonheurFile.close()
+    with open("exemple_datasets/haine.lst") as haineFile:
+       haineTweets = pickle.load(haineFile)
+       haineFile.close()
+    
+    return (haineTweets, bonheurTweets)
+
+nlp = stanza.Pipeline(lang='fr', processors='tokenize,sentiment', dir=os.getenv("DATA_DIR"))
+
+
+posWords, negWords = getNegAndPosWords()
+
+score = 0
+
+for tweet in haineTweets:
+    doc = nlp(tweet["text"])
+    for word in doc.sentences:
+        if (word in negWords):
+            score -= 1
+        if (word in posWords):
+            score += 1
