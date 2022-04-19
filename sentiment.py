@@ -1,6 +1,7 @@
 import stanza
 import os
 import twitterapi
+import pickle
 
 nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment', dir=os.getenv("TS_DATA"))
 
@@ -19,6 +20,10 @@ while True:
         untilId = tweets[-1]["id"]
 
     print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+
+    for tweet in tweets:
+        if tweet["lang"] != "fr":
+            tweets.remove(tweet)
     total = 0
     for tweet in tweets:
         doc = nlp(tweet["text"])
