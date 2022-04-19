@@ -3,7 +3,9 @@ import os
 import twitterapi
 import pickle
 
-nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment', dir=os.getenv("TS_DATA"))
+print(os.getenv("DATA_DIR"))
+
+nlp = stanza.Pipeline(lang='en', processors='tokenize,sentiment', dir=os.getenv("DATA_DIR"))
 
 while True:
     
@@ -21,9 +23,8 @@ while True:
 
     print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
 
-    for tweet in tweets:
-        if tweet["lang"] != "fr":
-            tweets.remove(tweet)
+    tweets = list(filter(lambda e: e["lang"] == "fr", tweets))
+    print("Kept %d french tweets"%len(tweets))
     total = 0
     for tweet in tweets:
         doc = nlp(tweet["text"])
