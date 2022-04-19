@@ -130,4 +130,5 @@ dmypy.json
 
 .bearertoken
 data/
-twittersentiment/
+twittersentiments
+.model_data_dir
