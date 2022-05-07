@@ -69,7 +69,7 @@ def process_sentence(stz_sentence, posWords, negWords):
                 break
     return sentence_score
 
-def process_tweet(tweet, posWords, negWords):
+def process_tweet(nlp, tweet, posWords, negWords):
     doc = nlp(tweet["text"])
     tweet_score = 0
     for sentence in doc.sentences:
@@ -77,21 +77,22 @@ def process_tweet(tweet, posWords, negWords):
     return tweet_score
 
 
-nlp = stanza.Pipeline(lang='fr', processors='tokenize', dir=os.getenv("DATA_DIR"))
+if __name__ == "__main__":
+    nlp = stanza.Pipeline(lang='fr', processors='tokenize', dir=os.getenv("DATA_DIR"))
 
-print("\n\n=======================\n")
-posWords, negWords = getNegAndPosWords()
-haineTweets, bonheurTweets = openTweets()
+    print("\n\n=======================\n")
+    posWords, negWords = getNegAndPosWords()
+    haineTweets, bonheurTweets = openTweets()
 
-hatescore = 0
-for tweet in haineTweets:
-    hatescore += process_tweet(tweet, posWords, negWords)
-print("hate tweets score : %f"%hatescore)
+    hatescore = 0
+    for tweet in haineTweets:
+        hatescore += process_tweet(tweet, posWords, negWords)
+    print("hate tweets score : %f"%hatescore)
 
-happyscore = 0
-for tweet in bonheurTweets:
-    happyscore += process_tweet(tweet, posWords, negWords)
-print("happiness tweets score : %f"%happyscore)
+    happyscore = 0
+    for tweet in bonheurTweets:
+        happyscore += process_tweet(tweet, posWords, negWords)
+    print("happiness tweets score : %f"%happyscore)
 
 
 
