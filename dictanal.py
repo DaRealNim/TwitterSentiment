@@ -2,6 +2,7 @@ import pickle
 import stanza
 import os
 import pickle
+import string
 
 def getNegAndPosWords():
     with open("dicts/annotated.dict") as dictFile:
@@ -40,53 +41,56 @@ def getNegAndPosWords():
 
 
 def openTweets():
-    with open("exemple_datasets/bonheur.lst") as bonheurFile:
+    with open("exemple_datasets/bonheur.lst", "rb") as bonheurFile:
        bonheurTweets = pickle.load(bonheurFile)
        bonheurFile.close()
-    with open("exemple_datasets/haine.lst") as haineFile:
+    with open("exemple_datasets/haine.lst", "rb") as haineFile:
        haineTweets = pickle.load(haineFile)
        haineFile.close()
     
     return (haineTweets, bonheurTweets)
 
+def process_word(word):
+    for symbol in string.punctuation:
+        word.replace(symbol, "")
+    return word.upper()
+
+def process_sentence(stz_sentence, posWords, negWords):
+    sentence_score = 0
+    for stz_word in stz_sentence.words:
+        w = process_word(stz_word.text)
+        for negword in negWords:
+            if negword == w or (negword.endswith("*") and w.startswith(negword[:-1])):
+                sentence_score -= negWords[negword]
+                break
+        for posword in posWords:
+            if posword == w or (posword.endswith("*") and w.startswith(posword[:-1])):
+                sentence_score += posWords[posword]
+                break
+    return sentence_score
+
+def process_tweet(tweet, posWords, negWords):
+    doc = nlp(tweet["text"])
+    tweet_score = 0
+    for sentence in doc.sentences:
+        tweet_score += process_sentence(sentence, posWords, negWords)
+    return tweet_score
+
 
 nlp = stanza.Pipeline(lang='fr', processors='tokenize', dir=os.getenv("DATA_DIR"))
 
-
-f = open("exemple_datasets/haine.lst", "rb")
-haineTweets = pickle.load(f)
-f.close()
-
-f = open("exemple_datasets/bonheur.lst", "rb")
-bonheurTweets = pickle.load(f)
-f.close()
-
+print("\n\n=======================\n")
 posWords, negWords = getNegAndPosWords()
+haineTweets, bonheurTweets = openTweets()
 
 hatescore = 0
-
 for tweet in haineTweets:
-    doc = nlp(tweet["text"])
-    for sentence in doc.sentences:
-        for word in sentence.words:
-            if (word.text.upper() in negWords):
-                hatescore -= negWords[word.text.upper()]
-            if (word.text.upper() in posWords):
-                hatescore += posWords[word.text.upper()]
-
+    hatescore += process_tweet(tweet, posWords, negWords)
 print("hate tweets score : %f"%hatescore)
 
 happyscore = 0
-
 for tweet in bonheurTweets:
-    doc = nlp(tweet["text"])
-    for sentence in doc.sentences:
-        for word in sentence.words:
-            if (word.text.upper() in negWords):
-                happyscore -= negWords[word.text.upper()]
-            if (word.text.upper() in posWords):
-                happyscore += posWords[word.text.upper()]
-
+    happyscore += process_tweet(tweet, posWords, negWords)
 print("happiness tweets score : %f"%happyscore)
 
 
