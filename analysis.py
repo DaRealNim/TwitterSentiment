@@ -74,6 +74,7 @@ def process_sentence(stz_sentence, words, verbose):
     irony = sentence_contains_ironic_adjective(stz_sentence.words)
     relevantwords = 0
     negativemodscount = {}
+    sentimentwords = []
     # first pass for negations
     for stz_word in stz_sentence.words:
         w = process_word(stz_word.text)
@@ -87,6 +88,8 @@ def process_sentence(stz_sentence, words, verbose):
     for stz_word in stz_sentence.words:
         verboseout = ""
         w = process_word(stz_word.text)
+        if w == "FRANCE":
+            continue
 
         if verbose: verboseout += "-> "+w+"\n"
         wordscore = words.get(w)
@@ -99,6 +102,7 @@ def process_sentence(stz_sentence, words, verbose):
             #         break
             pass
         else:
+            sentimentwords.append((w, wordscore))
             relevantwords += 1
 
 
@@ -113,19 +117,23 @@ def process_sentence(stz_sentence, words, verbose):
     #     sentence_score /= relevantwords
     if irony:
         sentence_score *= -1
-    return sentence_score
+
+    return sentence_score, sentimentwords
 
 def process_text(nlp, text, words, verbose=False):
     doc = nlp(text)
     text_score = 0
+    sentimentwords = []
     for sentence in doc.sentences:
-        text_score += process_sentence(sentence, words, verbose)
+        score, usedwords = process_sentence(sentence, words, verbose)
+        text_score += score
+        sentimentwords += usedwords
     # text_score /= len(doc.sentences)
     # very basic irony detection
     if text.endswith("/s"):
         if verbose: print("-> /s indique l'ironie, inversion du score de la phrase")
         text_score *= -1
-    return text_score
+    return text_score, sentimentwords
 
 
 
@@ -142,7 +150,17 @@ def openTestTweets():
     return (haineTweets, bonheurTweets, ironieTweets, negationTweets)
 
 if __name__ == "__main__":
-    nlp = stanza.Pipeline(lang='fr', processors="tokenize,mwt,pos,depparse,lemma", dir=os.getenv("DATA_DIR"))
+    nlp = None
+    try:
+        if os.getenv("DATA_DIR") is None:
+            nlp = stanza.Pipeline(lang='fr', processors="tokenize,mwt,pos,depparse,lemma")
+        else:
+            nlp = stanza.Pipeline(lang='fr', processors="tokenize,mwt,pos,depparse,lemma", dir=os.getenv("DATA_DIR"))
+    except stanzacore.LanguageNotDownloadedError:
+        print("[-] Erreur : impossible de charger les modèles stanzas.")
+        print("Si vos modèles sont dans un dossier différent du chemin par defaut, paramétrez la variable \
+        d'environnement DATA_DIR avec le chemin du dossier stanza_resources.")
+        exit(1)
 
     print("\n\n=======================\n")
     words = getNegAndPosWords()

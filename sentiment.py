@@ -5,12 +5,24 @@ import pickle
 import analysis
 import warnings
 import argparse
+import math
+import stanza.pipeline.core as stanzacore
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
 print(os.getenv("DATA_DIR"))
 
-nlp = stanza.Pipeline(lang='fr', processors="tokenize,mwt,pos,depparse,lemma", dir=os.getenv("DATA_DIR"))
+nlp = None
+try:
+    if os.getenv("DATA_DIR") is None:
+        nlp = stanza.Pipeline(lang='fr', processors="tokenize,mwt,pos,depparse,lemma")
+    else:
+        nlp = stanza.Pipeline(lang='fr', processors="tokenize,mwt,pos,depparse,lemma", dir=os.getenv("DATA_DIR"))
+except stanzacore.LanguageNotDownloadedError:
+    print("[-] Erreur : impossible de charger les modèles stanzas.")
+    print("Si vos modèles sont dans un dossier différent du chemin par defaut, paramétrez la variable \
+    d'environnement DATA_DIR avec le chemin du dossier stanza_resources.")
+    exit(1)
 
 words = analysis.getNegAndPosWords()
 
@@ -45,15 +57,48 @@ while True:
                         break
                     untilId = tweets[-1]["id"]
                 print("%d tweets récents français récupérés"%len(tweets))
+                sentimentwords = []
                 total = 0
+                mostnegtweet = ""
+                mostpostweet = ""
+                mostnegtweetscore = math.inf
+                mostpostweetscore = -math.inf
                 for tweet in tweets:
-                    total += analysis.process_text(nlp, tweet["text"], words)
+                    score, usedwords = analysis.process_text(nlp, tweet["text"], words)
+                    if score > mostpostweetscore:
+                        mostpostweetscore = score
+                        mostpostweet = tweet["text"]
+                    if score < mostnegtweetscore:
+                        mostnegtweetscore = score
+                        mostnegtweet = tweet["text"]
+                    total += score
+                    sentimentwords += usedwords
                 # total /= len(tweets)
-                print("Resultat :", total)
-                print()
+                print("========= Resultat :", total, "=========")
+                sentimentwords.sort(key=lambda x: x[1])
+                poswords = list(map(lambda x: x[0], filter(lambda x: x[1]>0, sentimentwords)))
+                negwords = list(map(lambda x: x[0], filter(lambda x: x[1]<0, sentimentwords)))
+                mostcommonposword = max(poswords, key=poswords.count)
+                mostcommonnegword = max(negwords, key=negwords.count)
+                print("\nTweet le plus négatif (score %d):"%mostnegtweetscore)
+                print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+                print(mostnegtweet)
+                print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+                print("\nTweet le plus positif (score %d):"%mostpostweetscore)
+                print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+                print(mostpostweet)
+                print("=+=+=+=+=+=+=+=+=+=+=+=+=+=+=")
+                print("\nMot le plus négatif reconnu :", sentimentwords[0])
+                print("Mot le plus positif reconnu :", sentimentwords[-1])
+                print("Mot négatif le plus courant :", mostcommonnegword)
+                print("Mot positif le plus courant :", mostcommonposword)
+
+                print("=============================================")
+                print("\n"*3)
             else:
                 text = input("Texte: ")
-                print("Résultat :", analysis.process_text(nlp, text, words, verbose=True))
+                score, usedwords = analysis.process_text(nlp, text, words, verbose=True)
+                print("Résultat :", score)
                 print()
     except KeyboardInterrupt:
         print("\n\nInterruption détectée.")
