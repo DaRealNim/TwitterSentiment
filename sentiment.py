@@ -52,10 +52,16 @@ while True:
                 untilId = ""
                 tweets = []
                 for i in range(tweetBatches):
-                    tweets += twitterapi.searchTweets(hashtags, untilId)["data"]
+                    res = twitterapi.searchTweets(hashtags, untilId)
+                    if "data" not in res:
+                        print("[!] Pas de tweets correspondants")
+                        continue
+                    tweets += res["data"]
                     if (len(tweets) < (i+1)*100):
                         break
                     untilId = tweets[-1]["id"]
+                if len(tweets) == 0:
+                    continue
                 print("%d tweets récents français récupérés"%len(tweets))
                 sentimentwords = []
                 total = 0
