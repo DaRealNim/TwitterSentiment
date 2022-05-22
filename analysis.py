@@ -10,10 +10,12 @@ warnings.filterwarnings("ignore", category=UserWarning)
 NEGATIONS = ["PAS", "GUÈRE", "JAMAIS", "NI"]
 
 def getNegAndPosWords():
+    suffixes = []
+    with open("dicts/suffixes.txt") as suffixFile:
+        suffixes = suffixFile.read().splitlines()
     with open("dicts/annotated.dict") as dictFile:
         lines = iter(dictFile.readlines())
-        negativeWords = {}
-        positiveWords = {}
+        words = {}
         next(lines)
         c = 2
         try:
@@ -22,7 +24,13 @@ def getNegAndPosWords():
                 neg[0] = neg[0].strip()
                 neg[1] = neg[1].replace(")", "")
                 neg[1] = float(neg[1])
-                negativeWords[neg[0]] = neg[1]
+                if neg[0].endswith("*"):
+                    # regexes[re.compile("^"+neg[0][:-1]+".*$")] = -neg[1]
+                    words[neg[0][:-1]] = -neg[1]
+                    for s in suffixes:
+                        words[neg[0][:-1] + s.upper()] = -neg[1]
+                else:
+                    words[neg[0]] = -neg[1]
                 c += 1
         
             while True:
@@ -32,16 +40,21 @@ def getNegAndPosWords():
                     pos = pos.split("(")
                     pos[0] = pos[0].strip() 
                     pos[1] = pos[1].replace(")","")
-                    pos[1] = float(pos[1])           
-                    positiveWords[pos[0]] = pos[1]
+                    pos[1] = float(pos[1])    
+                    if pos[0].endswith("*"):
+                        # regexes[re.compile("^"+pos[0][:-1]+".*$")] = pos[1]
+                        words[pos[0][:-1]] = pos[1]
+                        for s in suffixes:
+                            words[pos[0][:-1] + s.upper()] = pos[1]
+                    else:       
+                        words[pos[0]] = pos[1]
                 except StopIteration:
                     break
         except Exception as e:
             print(e)
             print("line %d"%c)
     dictFile.close()
-
-    return (positiveWords, negativeWords)
+    return (words)
 
 def process_word(word):
     for symbol in string.punctuation:
@@ -56,9 +69,10 @@ def sentence_contains_ironic_adjective(words:list) -> bool:
               return True
     return False
 
-def process_sentence(stz_sentence, posWords, negWords):
+def process_sentence(stz_sentence, words, verbose):
     sentence_score = 0
     irony = sentence_contains_ironic_adjective(stz_sentence.words)
+    relevantwords = 0
     negativemodscount = {}
     # first pass for negations
     for stz_word in stz_sentence.words:
@@ -71,30 +85,45 @@ def process_sentence(stz_sentence, posWords, negWords):
 
     # second pass for word scores and to apply negations
     for stz_word in stz_sentence.words:
+        verboseout = ""
         w = process_word(stz_word.text)
-        wordscore = 0
-        for negword in negWords:
-            if negword == w or (negword.endswith("*") and w.startswith(negword[:-1])):
-                wordscore = -negWords[negword]
-                break
-        for posword in posWords:
-            if posword == w or (posword.endswith("*") and w.startswith(posword[:-1])):
-                wordscore = posWords[posword]
-                break
+
+        if verbose: verboseout += "-> "+w+"\n"
+        wordscore = words.get(w)
+        if wordscore is None:
+            # for reg in regexes:
+            #     if reg.search(w) is not None:
+            #         if verbose : verboseout += "Expression régulière " + w + " : " + reg.pattern + "\n"
+            #         relevantwords += 1
+            #         wordscore = regexes[reg]
+            #         break
+            pass
+        else:
+            relevantwords += 1
+
+
+        wordscore = 0 if wordscore is None else wordscore
+        
         nNegativeMods = 0 if stz_word.id not in negativemodscount else negativemodscount[stz_word.id]
+        if verbose and nNegativeMods != 0: verboseout += "Affecté par " + str(nNegativeMods) + " négation(s)"
         wordscore *= pow(-1, nNegativeMods)
+        if verbose and wordscore != 0: print(verboseout, "\n", w, ":", wordscore, "\n")
         sentence_score += wordscore
+    # if relevantwords != 0:
+    #     sentence_score /= relevantwords
     if irony:
         sentence_score *= -1
     return sentence_score
 
-def process_text(nlp, text, posWords, negWords):
+def process_text(nlp, text, words, verbose=False):
     doc = nlp(text)
     text_score = 0
     for sentence in doc.sentences:
-        text_score += process_sentence(sentence, posWords, negWords)
+        text_score += process_sentence(sentence, words, verbose)
+    # text_score /= len(doc.sentences)
     # very basic irony detection
     if text.endswith("/s"):
+        if verbose: print("-> /s indique l'ironie, inversion du score de la phrase")
         text_score *= -1
     return text_score
 
@@ -116,25 +145,25 @@ if __name__ == "__main__":
     nlp = stanza.Pipeline(lang='fr', processors="tokenize,mwt,pos,depparse,lemma", dir=os.getenv("DATA_DIR"))
 
     print("\n\n=======================\n")
-    posWords, negWords = getNegAndPosWords()
+    words = getNegAndPosWords()
     haineTweets, bonheurTweets, ironieTweets, negationTweets = openTestTweets()
 
     print("Test d'ironie:")
     for tweet in ironieTweets:
-        print(tweet["text"] + " : " + str(process_tweet(nlp, tweet, posWords, negWords)))
+        print(tweet["text"] + " : " + str(process_text(nlp, tweet["text"], words)))
     print("")
     print("Test de négations:")
     for tweet in negationTweets:
-        print(tweet["text"] + " : " + str(process_tweet(nlp, tweet, posWords, negWords)))
+        print(tweet["text"] + " : " + str(process_text(nlp, tweet["text"], words)))
     print("")
     hatescore = 0
     for tweet in haineTweets:
-        hatescore += process_tweet(nlp, tweet, posWords, negWords)
+        hatescore += process_text(nlp, tweet["text"], words)
     print("Score de 100 tweets comportant #hate : %f"%hatescore)
 
     happyscore = 0
     for tweet in bonheurTweets:
-        happyscore += process_tweet(nlp, tweet, posWords, negWords)
+        happyscore += process_text(nlp, tweet["text"], words)
     print("Score de 100 tweets comportant #bonheur : %f"%happyscore)
 
 

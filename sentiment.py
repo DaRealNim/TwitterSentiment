@@ -12,7 +12,7 @@ print(os.getenv("DATA_DIR"))
 
 nlp = stanza.Pipeline(lang='fr', processors="tokenize,mwt,pos,depparse,lemma", dir=os.getenv("DATA_DIR"))
 
-posWords, negWords = analysis.getNegAndPosWords()
+words = analysis.getNegAndPosWords()
 
 print("\n==========================\n")
 twittermode = True
@@ -47,13 +47,13 @@ while True:
                 print("%d tweets récents français récupérés"%len(tweets))
                 total = 0
                 for tweet in tweets:
-                    total += analysis.process_text(nlp, tweet["text"], posWords, negWords)
+                    total += analysis.process_text(nlp, tweet["text"], words)
                 # total /= len(tweets)
                 print("Resultat :", total)
                 print()
             else:
                 text = input("Texte: ")
-                print("Résultat :", analysis.process_text(nlp, text, posWords, negWords))
+                print("Résultat :", analysis.process_text(nlp, text, words, verbose=True))
                 print()
     except KeyboardInterrupt:
         print("\n\nInterruption détectée.")
