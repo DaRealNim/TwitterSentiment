@@ -3,6 +3,19 @@
 - Python 3.X
 - Une version récente de stanza
 - Un modèle français pour stanza
+- Le module requests
+
+Installer rapidement stanza et requests :
+
+`pip install -r requirements.txt`
+
+Installer le modèle français pour stanza:
+
+`python3 -c "import stanza; stanza.download(lang='fr')"`
+
+Installer le modèle dans un dossier spécifique:
+
+`python3 -c "import stanza; stanza.download(lang='fr', model_dir='chemin/du/dossier')"`
 
 ## Utilisation
 Lancer sentiment.py pour le logiciel principal d'analyse Twitter, ou pour tester l'analyse de sentiment avec des phrases personnalisées.
