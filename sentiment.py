@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import stanza
 import os
 import twitterapi
@@ -69,6 +71,7 @@ while True:
                 mostpostweet = ""
                 mostnegtweetscore = math.inf
                 mostpostweetscore = -math.inf
+                print("Analyse en cours...")
                 for tweet in tweets:
                     score, usedwords = analysis.process_text(nlp, tweet["text"], words)
                     if score > mostpostweetscore:
@@ -80,6 +83,7 @@ while True:
                     total += score
                     sentimentwords += usedwords
                 # total /= len(tweets)
+                print("\n")
                 print("========= Resultat :", total, "=========")
                 sentimentwords.sort(key=lambda x: x[1])
                 poswords = list(map(lambda x: x[0], filter(lambda x: x[1]>0, sentimentwords)))

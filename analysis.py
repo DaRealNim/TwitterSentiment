@@ -27,7 +27,6 @@ def getNegAndPosWords():
                 neg[1] = neg[1].replace(")", "")
                 neg[1] = float(neg[1])
                 if neg[0].endswith("*"):
-                    # regexes[re.compile("^"+neg[0][:-1]+".*$")] = -neg[1]
                     words[neg[0][:-1]] = -neg[1]
                     for s in suffixes:
                         words[neg[0][:-1] + s.upper()] = -neg[1]
@@ -44,7 +43,6 @@ def getNegAndPosWords():
                     pos[1] = pos[1].replace(")","")
                     pos[1] = float(pos[1])    
                     if pos[0].endswith("*"):
-                        # regexes[re.compile("^"+pos[0][:-1]+".*$")] = pos[1]
                         words[pos[0][:-1]] = pos[1]
                         for s in suffixes:
                             words[pos[0][:-1] + s.upper()] = pos[1]
@@ -66,7 +64,6 @@ def process_word(word):
 def sentence_contains_ironic_adjective(words:list) -> bool:
     for index in range(1, len(words) - 1):
         preword, word, nextword = words[index-1], words[index], words[index+1]
-        # print(f"{preword.text} {word.text} ({word.upos}) {nextword.text}")
         if preword.text == "\"" and nextword.text == "\"" and word.upos == "ADJ":
               return True
     return False
@@ -90,20 +87,13 @@ def process_sentence(stz_sentence, words, verbose):
     for stz_word in stz_sentence.words:
         verboseout = ""
         w = process_word(stz_word.text)
-        if w == "FRANCE":
+
+        if w == "FRANCE": #edge case
             continue
 
         if verbose: verboseout += "-> "+w+"\n"
         wordscore = words.get(w)
-        if wordscore is None:
-            # for reg in regexes:
-            #     if reg.search(w) is not None:
-            #         if verbose : verboseout += "Expression régulière " + w + " : " + reg.pattern + "\n"
-            #         relevantwords += 1
-            #         wordscore = regexes[reg]
-            #         break
-            pass
-        else:
+        if wordscore is not None:
             sentimentwords.append((w, wordscore))
             relevantwords += 1
 
@@ -115,8 +105,6 @@ def process_sentence(stz_sentence, words, verbose):
         wordscore *= pow(-1, nNegativeMods)
         if verbose and wordscore != 0: print(verboseout, "\n", w, ":", wordscore, "\n")
         sentence_score += wordscore
-    # if relevantwords != 0:
-    #     sentence_score /= relevantwords
     if irony:
         sentence_score *= -1
 
@@ -130,7 +118,6 @@ def process_text(nlp, text, words, verbose=False):
         score, usedwords = process_sentence(sentence, words, verbose)
         text_score += score
         sentimentwords += usedwords
-    # text_score /= len(doc.sentences)
     # very basic irony detection
     if "/s" in text or "🙃" in text:
         if verbose: print("-> /s et 🙃 indiquent l'ironie, inversion du score de la phrase")
@@ -170,20 +157,24 @@ if __name__ == "__main__":
 
     print("Test d'ironie:")
     for tweet in ironieTweets:
-        print(tweet["text"] + " : " + str(process_text(nlp, tweet["text"], words)))
+        res, _ = process_text(nlp, tweet["text"], words)
+        print(tweet["text"] + " : " + str(res))
     print("")
     print("Test de négations:")
     for tweet in negationTweets:
-        print(tweet["text"] + " : " + str(process_text(nlp, tweet["text"], words)))
+        res, _ = process_text(nlp, tweet["text"], words)
+        print(tweet["text"] + " : " + str(res))
     print("")
     hatescore = 0
     for tweet in haineTweets:
-        hatescore += process_text(nlp, tweet["text"], words)
+        res, _ = process_text(nlp, tweet["text"], words)
+        hatescore += res
     print("Score de 100 tweets comportant #hate : %f"%hatescore)
 
     happyscore = 0
     for tweet in bonheurTweets:
-        happyscore += process_text(nlp, tweet["text"], words)
+        res, _ = process_text(nlp, tweet["text"], words)
+        happyscore += res
     print("Score de 100 tweets comportant #bonheur : %f"%happyscore)
 
 
