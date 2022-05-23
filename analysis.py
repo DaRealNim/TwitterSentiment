@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import pickle
 import stanza
 import os
@@ -130,7 +132,7 @@ def process_text(nlp, text, words, verbose=False):
         sentimentwords += usedwords
     # text_score /= len(doc.sentences)
     # very basic irony detection
-    if text.endswith("/s") or text.endswith("🙃"):
+    if "/s" in text or "🙃" in text:
         if verbose: print("-> /s et 🙃 indiquent l'ironie, inversion du score de la phrase")
         text_score *= -1
     return text_score, sentimentwords
